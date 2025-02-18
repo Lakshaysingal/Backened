@@ -1,9 +1,11 @@
 const express=require('express');
 const mongoose=require('mongoose');
+const cors=require("cors");
 
 const app=express();
 
 app.use(express.json());
+app.use(cors());
 
 
 
@@ -22,6 +24,9 @@ const studentdata=new mongoose.Schema({
 
 const Student=mongoose.model("STUDENT",studentdata);
 
+app.get('/',(req,res)=>{
+    res.send('hello');
+})
 app.post("/students",async(req,res)=>{
     try {
         const { id,name, email, mobno } = req.body;
@@ -63,6 +68,38 @@ app.get("/students/:id",async(req,res)=>{
 
 
 });
+
+app.put("/students/:id",async(req,res)=>{
+
+    try{
+        const studentId = parseInt(req.params.id, 10);
+        const { id,name, email, mobno } = req.body;
+        const updatedStudent = await Student.findOneAndUpdate({ id:studentId},{id,name, email, mobno }, { new: true ,runValidators: true});
+        if (!updatedStudent) {
+            return res.status(404).send("Student not found");
+        }
+        res.status(200).json(updatedStudent);
+    } catch (error) {
+        res.status(400).send(error.message);
+    }
+});
+
+
+app.delete("/students/:id",async(req,res)=>{
+    try{
+        const studentId = parseInt(req.params.id, 10);
+        const deletedStudent = await Student.findOneAndDelete({id:studentId});
+        if (!deletedStudent) {
+            return res.status(404).send("Student not found");
+        }
+        res.status(200).send("Student deleted");
+    } catch (error) {
+        res.status(400).send(error.message);
+    }
+
+});
+
+
 
 
 

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        input, button {
+            margin: 5px;
+            padding: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Student Management System</h2>
+    
+    <h3>Add / Update Student</h3>
+    <input type="number" id="studentId" placeholder="ID">
+    <input type="text" id="name" placeholder="Name">
+    <input type="email" id="email" placeholder="Email">
+    <input type="text" id="mobno" placeholder="Mobile Number">
+    <button onclick="addStudent()">Add Student</button>
+    <button onclick="updateStudent()">Update Student</button>
+    
+    <h3>Get Student by ID</h3>
+    <input type="number" id="searchId" placeholder="Enter Student ID">
+    <button onclick="getStudentById()">Search</button>
+    
+    <h3>All Students</h3>
+    <button onclick="getAllStudents()">Load Students</button>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Mobile</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="studentTable"></tbody>
+    </table>
+    
+    <script>
+        const API_URL = "http://localhost:3000/students";
+
+        async function addStudent() {
+            const id = document.getElementById("studentId").value;
+            const name = document.getElementById("name").value;
+            const email = document.getElementById("email").value;
+            const mobno = document.getElementById("mobno").value;
+
+            const response = await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id, name, email, mobno })
+            });
+
+            alert(await response.text());
+            getAllStudents();
+        }
+
+        async function getAllStudents() {
+            const response = await fetch(API_URL);
+            const students = await response.json();
+            const table = document.getElementById("studentTable");
+            table.innerHTML = "";
+            students.forEach(student => {
+                table.innerHTML += `
+                    <tr>
+                        <td>${student.id}</td>
+                        <td>${student.name}</td>
+                        <td>${student.email}</td>
+                        <td>${student.mobno}</td>
+                        <td>
+                            <button onclick="deleteStudent(${student.id})">Delete</button>
+                        </td>
+                    </tr>`;
+            });
+        }
+
+        async function getStudentById() {
+            const id = document.getElementById("searchId").value;
+            const response = await fetch(`${API_URL}/${id}`);
+            
+           
+
+    try {
+        const response = await fetch(`${API_URL}/${id}`);
+        
+        if (!response.ok) {
+            throw new Error("Student not found");
+        }
+
+        const student = await response.json();
+        alert(`ID: ${student.id}\nName: ${student.name}\nEmail: ${student.email}\nMobile: ${student.mobno}`);
+    } catch (error) {
+        alert("Error: " + error.message);
+    }
+        }
+
+        async function updateStudent() {
+            const id = document.getElementById("studentId").value;
+            const name = document.getElementById("name").value;
+            const email = document.getElementById("email").value;
+            const mobno = document.getElementById("mobno").value;
+
+            const response = await fetch(`${API_URL}/${id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id, name, email, mobno })
+            });
+
+            alert(await response.text());
+            getAllStudents();
+        }
+
+        async function deleteStudent(id) {
+            const response = await fetch(`${API_URL}/${id}`, {
+                method: "DELETE"
+            });
+
+            alert(await response.text());
+            getAllStudents();
+        }
+    </script>
+</body>
+</html>
