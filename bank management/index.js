@@ -171,20 +171,29 @@ app.put('/withdraw/:acc',async(req,res)=>{
       const {amount} =req.body;
 
       
+      const account = await Accountholder.findOne({ accno });
 
       if (!amount || amount <= 0) {
         return res.status(400).send("Invalid witdraw amount");
-      }
 
+
+      }
+      if (!account) {
+        return res.status(404).send("Account not found");
+      }
+      if (account.balance < amount) return res.status(400).json({ error: "insufficient balance" });
+
+
+
+      
       const withdrawmoney= await Accountholder.findOneAndUpdate({accno},
         {$inc: {balance:-amount},$push:{transactions:{type:"withdraw ",amount,date:new Date() }}},
       {new :true, runValidators:true} 
       );
 
-      if (!withdrawmoney) {
-        return res.status(404).send("Account not found");
-      }
-      if (withdrawmoney.balance < amount) return res.status(400).json({ error: "Insufficient balance" });
+
+      
+      
       res.status(200).json({ message: "withdraw successful",Amountwithdraw:amount, newBalance: withdrawmoney.balance });
     
 }
@@ -202,7 +211,12 @@ app.get('/transactions/:accno',async(req,res)=>{
 
   if (!account) return res.status(404).json({ error: "Account not found" });
 
-  res.status(200).json(account.transactions);
+  res.status(200).json(
+    {
+      message: "transactionhitsory", 
+      currentbalance :account.balance,
+      transaction: account.transactions}
+    );
 
   }
 
