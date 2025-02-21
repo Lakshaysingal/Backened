@@ -19,7 +19,8 @@ const bankdata=new mongoose.Schema({
     name:{type:String,required:true},
     email:{type:String,required:true,unique: true},
     mobno:{type:String,required:true,unique:true},
-    balance:{type:Number,required:true}
+    balance:{type:Number,required:true},
+    transactions:[{type:  Object}]
 
 
     
@@ -63,6 +64,22 @@ app.get('/getaccount/:accno',async(req,res)=>{
       res.status(400).send(error.message);
   }
 });
+
+app.get('/getaccount',async(req,res)=>{
+  try{
+      
+      const accholder=  await Accountholder.find();
+
+      res.status(200).send(accholder);
+  }
+  catch(error){
+    console.log("error"+error);
+      res.status(400).send(error.message);
+  }
+});
+
+
+
 
 
 
@@ -132,20 +149,87 @@ app.put('/deposit/:acc',async(req,res)=>{
       }
 
       const depositmoney= await Accountholder.findOneAndUpdate({accno},
-        {$inc: {balance:amount}},
-      {new :true, runValidators:true}
+        {$inc: {balance:amount},$push:{transactions:{type:"Deposit ",amount,date:new Date() }}},
+      {new :true, runValidators:true} 
       );
 
       if (!depositmoney) {
         return res.status(404).send("Account not found");
       }
-      res.status(200).json({ message: "Deposit successful", newBalance: depositmoney.balance });
+      res.status(200).json({ message: "Deposit successful",Amountdeposited:amount, newBalance: depositmoney.balance });
     
 }
   catch(error){
     res.status(400).send("Error: " + error.message);
   }
 });
+
+
+app.put('/withdraw/:acc',async(req,res)=>{
+  try{
+      const accno=req.params.acc;
+      const {amount} =req.body;
+
+      
+
+      if (!amount || amount <= 0) {
+        return res.status(400).send("Invalid witdraw amount");
+      }
+
+      const withdrawmoney= await Accountholder.findOneAndUpdate({accno},
+        {$inc: {balance:-amount},$push:{transactions:{type:"withdraw ",amount,date:new Date() }}},
+      {new :true, runValidators:true} 
+      );
+
+      if (!withdrawmoney) {
+        return res.status(404).send("Account not found");
+      }
+      if (withdrawmoney.balance < amount) return res.status(400).json({ error: "Insufficient balance" });
+      res.status(200).json({ message: "withdraw successful",Amountwithdraw:amount, newBalance: withdrawmoney.balance });
+    
+}
+  catch(error){
+    res.status(400).send("Error: " + error.message);
+  }
+});
+
+
+
+app.get('/transactions/:accno',async(req,res)=>{
+  try{
+  const accno=req.params.accno;
+  const account=await Accountholder.findOne({accno});
+
+  if (!account) return res.status(404).json({ error: "Account not found" });
+
+  res.status(200).json(account.transactions);
+
+  }
+
+  catch(error){
+    res.status(400).json({ error: error.message });
+  }
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 app.delete('/deleteaccount/:accno', async (req, res) => {
   try {
