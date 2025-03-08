@@ -20,8 +20,8 @@ const bankdata=new mongoose.Schema({
     email:{type:String,required:true,unique: true},
     mobno:{type:String,required:true,unique:true},
     balance:{type:Number,required:true},
-    transactions:[{type:  Object}]
-
+    transactions:[{type:  Object}],
+    status: { type: String, enum: ['active', 'suspended', 'closed'], default: 'active' }
 
     
 });
@@ -223,7 +223,50 @@ app.get('/transactions/:accno',async(req,res)=>{
   catch(error){
     res.status(400).json({ error: error.message });
   }
+});
+
+
+
+
+app.put('/transfer',async(req,res)=>{
+  try{
+    const {fromacc,toacc,amount}=req.body;
+
+    if(!fromacc || !toacc || amount <= 0){
+      return res.status(400).send('invalid transfer details');
+    }
+    const sender=await Accountholder.findOne({accno: fromacc});
+    const recevier=await Accountholder.findOne({accno:toacc});
+
+    if (!sender || !recevier) return res.status(404).send('Account not found');
+    if (sender.status !== 'active' || recevier.status !== 'active') return res.status(400).send('One or both accounts are inactive');
+    if (sender.balance < amount) return res.status(400).send('Insufficient balance');
+
+
+    sender.balance-=amount;
+    recevier.balance+=amount;
+
+    sender.transactions.push({type:'Transfer out',amount,toacc:toacc,date:new Date()});  
+    recevier.transactions.push({type:'Transfer in',amount,fromaccount:fromacc,date:new Date()});  
+
+    await sender.save();
+
+    await recevier.save();
+
+    res.status(200).send("Transfer successfull");
+
+
+
+
+  }
+  catch(error){
+    res.status(500).send(error.message);
+  }
 })
+
+
+
+
 
 
 
@@ -260,6 +303,27 @@ app.delete('/deleteaccount/:accno', async (req, res) => {
   }
 });
 
+
+app.get('/currentbalance/:accno',async(req,res)=>{
+  try{
+    const accno=req.params.accno;
+  const account=await Accountholder.findOne({accno});
+    
+  if (!account) return res.status(404).json({ error: "Account not found" });
+
+  res.status(200).json(
+    {
+      message:"current balance",
+      balance: account.balance
+    }
+  )
+
+  }
+  catch(error){
+    console.log(error);
+    res.status(500).send(error.message);
+  }
+});
 
 
 
