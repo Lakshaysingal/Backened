@@ -1,6 +1,7 @@
 const express=require('express');
 const cors=require('cors');
 const mongoose=require("mongoose");
+const nodemailer=require('nodemailer');
 
 
 const app=express();
@@ -27,12 +28,35 @@ const bankdata=new mongoose.Schema({
 });
 
 
+const transporter=nodemailer.createTransport({
+  service:"gmail",
+  auth:{
+    user:"singallakshay04@gmail.com",
+    pass:"",
+  },
+});
+
+const sendEmail = async (email, subject, message) => {
+  try {
+    await transporter.sendMail({
+      from: "your-email@gmail.com",
+      to: email,
+      subject:subject,
+      text: message,
+    });
+    console.log(`Email sent to ${email}`);
+  } catch (error) {
+    console.error("Email error:", error);
+  }
+};
+
+
 
 const Accountholder =mongoose.model("BANK",bankdata);
 
 
 app.get('/',(req,res)=>{
-  res.send("hello world");
+  res.send("bank managemt api");
 })
 
 app.post('/addaccount',async(req,res)=>{
@@ -149,18 +173,25 @@ app.put('/deposit/:acc',async(req,res)=>{
       }
 
       const depositmoney= await Accountholder.findOneAndUpdate({accno},
-        {$inc: {balance:amount},$push:{transactions:{type:"Deposit ",amount,date:new Date() }}},
+        {$inc: {balance:amount},$push:{transactions:{type:"Deposit",amount,date:new Date() }}},
       {new :true, runValidators:true} 
       );
 
       if (!depositmoney) {
         return res.status(404).send("Account not found");
       }
+
+      await sendEmail(
+        depositmoney.email,
+        "Deposit Successfull",
+        `Dear ${depositmoney.name},\n\n You have successfully deposited Rs ${amount} into your account .\n \nCurrent Balance: ${depositmoney.balance}.\n\nThanks for using our service \n\n Regards \n\n HM FINANCE `
+      
+      );
       res.status(200).json({ message: "Deposit successful",Amountdeposited:amount, newBalance: depositmoney.balance });
     
 }
   catch(error){
-    res.status(400).send("Error: " + error.message);
+    res.status(500).send("Error: " + error.message);
   }
 });
 
@@ -189,6 +220,12 @@ app.put('/withdraw/:acc',async(req,res)=>{
       const withdrawmoney= await Accountholder.findOneAndUpdate({accno},
         {$inc: {balance:-amount},$push:{transactions:{type:"withdraw ",amount,date:new Date() }}},
       {new :true, runValidators:true} 
+      );
+
+      await sendEmail(
+        account.email,
+        "Withdrawal Alert",
+        `Dear ${account.name},\n\nYou have withdrawn ${amount} from your account.\nCurrent Balance :${withdrawmoney.balance}\n\nThanks for using our service \n\n Regards \n\n HM FINANCE`
       );
 
 
@@ -252,6 +289,20 @@ app.put('/transfer',async(req,res)=>{
     await sender.save();
 
     await recevier.save();
+
+
+
+    await sendEmail(
+      sender.email,
+      "Funds Transferred",
+      `Dear ${sender.name},\n\nYou transferred ${amount} to account ${toacc}\n\nCurrent Balance: ${sender.balance}\n\nThanks for using our service \n\n Regards \n\n HM FINANCE`
+    );
+
+    await sendEmail(
+      recevier.email,
+      "Funds Received",
+      `Dear ${recevier.name},\n\nYou received ${amount} from account ${fromacc}.\nNew Balance: ${recevier.balance}\n\nThanks for using our service \n\n Regards \n\n HM FINANCE`
+    );
 
     res.status(200).send("Transfer successfull");
 
