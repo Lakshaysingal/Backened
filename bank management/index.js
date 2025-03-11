@@ -2,6 +2,10 @@ const express=require('express');
 const cors=require('cors');
 const mongoose=require("mongoose");
 const nodemailer=require('nodemailer');
+const fs = require('fs');
+const csvWriter = require('csv-writer').createObjectCsvWriter;
+const PDFDocument = require('pdfkit');
+const path=require('path');
 
 
 const app=express();
@@ -378,12 +382,59 @@ app.get('/currentbalance/:accno',async(req,res)=>{
 
 
 
+
+const statementsFolder = path.join(__dirname, 'statements');
+if (!fs.existsSync(statementsFolder)) {
+    fs.mkdirSync(statementsFolder);
+}
+
+
+app.get('/statement/pdf/:accno', async (req, res) => {
+  try {
+      const { accno } = req.params;
+      const user = await Accountholder.findOne({ accno });
+
+      if (!user) return res.status(404).send('Account not found');
+
+      const pdfPath = path.join(statementsFolder, `${accno}_statement.pdf`);
+      const doc = new PDFDocument();
+      const writeStream = fs.createWriteStream(pdfPath);
+      doc.pipe(writeStream);
+
+      // ✅ Add Account Details
+      doc.fontSize(20).text(`Account Statement`, { align: 'center' });
+      doc.moveDown();
+      doc.fontSize(14).text(`Name: ${user.name}`);
+      doc.text(`Account No: ${user.accno}`);
+      doc.text(`Email: ${user.email}`);
+      doc.text(`Mobile No: ${user.mobno}`);
+      doc.text(`Balance: Rs.${user.balance}`);
+      doc.moveDown();
+
+      // ✅ Add Transactions
+      doc.fontSize(16).text('Transaction History:', { underline: true });
+      doc.moveDown();
+      user.transactions.forEach((txn, index) => {
+          doc.fontSize(12).text(
+              `${index + 1}. ${txn.type} | Amount: Rs.${txn.amount} | Date: ${txn.date}`
+          );
+      });
+
+      doc.end(); // ✅ Finalize PDF
+
+      // ✅ Wait for PDF to be written before sending
+      writeStream.on('finish', () => {
+          res.setHeader('Content-Type', 'application/pdf');
+          res.setHeader('Content-Disposition', `attachment; filename="${accno}_statement.pdf"`);
+          res.download(pdfPath);
+      });
+
+  } catch (error) {
+      res.status(500).send("Error generating PDF: " + error.message);
+  }
+});
+
 app.listen(3000,()=>{
   console.log(`server running on http://localhost:${3000}`);
 });
-
-
-
-
-
 
