@@ -385,7 +385,7 @@ app.get('/currentbalance/:accno',async(req,res)=>{
 
 const statementsFolder = path.join(__dirname, 'statements');
 if (!fs.existsSync(statementsFolder)) {
-    fs.mkdirSync(statementsFolder);
+    fs.mkdirSync(statementsFolder,{ recursive: true });
 }
 
 
@@ -401,7 +401,6 @@ app.get('/statement/pdf/:accno', async (req, res) => {
       const writeStream = fs.createWriteStream(pdfPath);
       doc.pipe(writeStream);
 
-      // ✅ Add Account Details
       doc.fontSize(20).text(`Account Statement`, { align: 'center' });
       doc.moveDown();
       doc.fontSize(14).text(`Name: ${user.name}`);
@@ -411,7 +410,7 @@ app.get('/statement/pdf/:accno', async (req, res) => {
       doc.text(`Balance: Rs.${user.balance}`);
       doc.moveDown();
 
-      // ✅ Add Transactions
+      
       doc.fontSize(16).text('Transaction History:', { underline: true });
       doc.moveDown();
       user.transactions.forEach((txn, index) => {
@@ -420,9 +419,9 @@ app.get('/statement/pdf/:accno', async (req, res) => {
           );
       });
 
-      doc.end(); // ✅ Finalize PDF
+      doc.end(); 
 
-      // ✅ Wait for PDF to be written before sending
+      
       writeStream.on('finish', () => {
           res.setHeader('Content-Type', 'application/pdf');
           res.setHeader('Content-Disposition', `attachment; filename="${accno}_statement.pdf"`);
