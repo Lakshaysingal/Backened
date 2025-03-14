@@ -6,6 +6,8 @@ const fs = require('fs');
 const csvWriter = require('csv-writer').createObjectCsvWriter;
 const PDFDocument = require('pdfkit');
 const path=require('path');
+const schedule=require('node-schedule');
+const moment=require('moment');
 
 
 const app=express();
@@ -24,9 +26,10 @@ const bankdata=new mongoose.Schema({
     name:{type:String,required:true},
     email:{type:String,required:true,unique: true},
     mobno:{type:String,required:true,unique:true},
-    balance:{type:Number,required:true},
+    balance:{type:Number,required:true,set: v => parseFloat(v.toFixed(2)) },
     transactions:[{type:  Object}],
-    status: { type: String, enum: ['active', 'suspended', 'closed'], default: 'active' }
+    status: { type: String, enum: ['active', 'suspended', 'closed'], default: 'active' },
+    
 
     
 });
@@ -287,7 +290,7 @@ app.put('/transfer',async(req,res)=>{
     sender.balance-=amount;
     recevier.balance+=amount;
 
-    sender.transactions.push({type:'Transfer out',amount,toacc:toacc,date:new Date()});  
+    sender.transactions.push({type:'Transfer out',amount,toacc:toacc,date:moment().format("YYYY-MM-DD HH:mm:ss") });  
     recevier.transactions.push({type:'Transfer in',amount,fromaccount:fromacc,date:new Date()});  
 
     await sender.save();
@@ -431,7 +434,32 @@ app.get('/statement/pdf/:accno', async (req, res) => {
   } catch (error) {
       res.status(500).send("Error generating PDF: " + error.message);
   }
+  
 });
+
+
+
+
+
+schedule.scheduleJob('40 23 * * *', async () => {
+  try {
+      const accounts = await Accountholder.find();
+      for (const account of accounts) {
+          if ( account.balance > 0) {
+              const interest = (account.balance * 0.04) / 12; 
+              account.balance += interest;
+              account.transactions.push({ type: "Interest", amount: interest, date: moment().format("YYYY-MM-DD HH:mm:ss") });
+              await account.save();
+
+              await sendEmail(account.email, "Interest Credited", `Dear ${account.name}, Rs.${interest.toFixed(2)} has been added as interest to your account.`);
+          }
+      }
+      console.log("Interest added to all accounts");
+  } catch (error) {
+      console.error("Interest Calculation Error:", error);
+  }
+});
+
 
 app.listen(3000,()=>{
   console.log(`server running on http://localhost:${3000}`);
