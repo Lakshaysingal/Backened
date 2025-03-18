@@ -28,11 +28,35 @@ const bankdata=new mongoose.Schema({
     mobno:{type:String,required:true,unique:true},
     balance:{type:Number,required:true,set: v => parseFloat(v.toFixed(2)) },
     transactions:[{type:  Object}],
-    status: { type: String, enum: ['active', 'suspended', 'closed'], default: 'active' },
+    
     
 
     
 });
+
+const loandata = new mongoose.Schema({
+  accno: { type: String, required: true },
+  loantype:{type:String,required:true,enum:['home','personal','education','car','gold'],default:'personal'},
+  amount: { type: Number, required: true },
+  interestRate: { type: Number, required:true },  
+  tenure: { type: Number, required: true }, 
+  emi: { type: Number, required: true },
+  remainingBalance: { type: Number, required: true },
+  createdAt: { type: Date, default: Date.now },
+  status: { type: String, enum: ['pending','approved', 'rejected','closed'], default: 'pending' }
+});
+
+
+const getinterestrate=(loantype)=>{
+  const rate={
+    home: 0.035,       
+    personal: 0.12,     
+    car: 0.09,          
+    education: 0.05 , 
+    gold:0.78 
+  }
+  return rate[loantype] || 0.1; 
+}
 
 
 const transporter=nodemailer.createTransport({
@@ -60,6 +84,8 @@ const sendEmail = async (email, subject, message) => {
 
 
 const Accountholder =mongoose.model("BANK",bankdata);
+
+const loanholder=mongoose.model("LOan",loandata);
 
 
 app.get('/',(req,res)=>{
@@ -459,6 +485,81 @@ schedule.scheduleJob('40 23 * * *', async () => {
       console.error("Interest Calculation Error:", error);
   }
 });
+
+
+
+
+app.post('/apply-loan',async(req,res)=>{
+  try{
+    const {accno,loantype,amount,tenure}=req.body;
+    const account=await Accountholder.findOne({accno});
+
+    if(!account)return res.status(404).send("Account not found");
+
+    const interestRate=12;
+
+    emi=40000;
+
+    // const emi = (amount * interestRate) / (1 - Math.pow(1 + interestRate, -tenure));
+
+
+    const newLoan = new loanholder({
+      accno,
+      loantype,
+      amount,
+      interestRate,
+      tenure,
+      emi: emi,
+      remainingBalance: amount,
+      status: 'pending'
+  });
+
+  await newLoan.save();
+  res.status(201).json({ message: "Loan application submitted successfully.", loan: newLoan });
+
+  }
+  catch(error){
+    res.status(500).send("Error: " + error.message);
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 app.listen(3000,()=>{
