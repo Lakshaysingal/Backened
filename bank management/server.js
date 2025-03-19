@@ -11,6 +11,10 @@ app.use(cors());
 connectDB();
 
 app.use("/accounts", accountRoutes);
+
+app.get("/",async(req,res)=>{
+    res.send("Bank Management api");
+});
 // app.use("/loans", loanRoutes);
 
 app.listen(3000, () => {
