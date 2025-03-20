@@ -10,13 +10,13 @@ app.use(cors());
 
 connectDB();
 
-app.use("/accounts", accountRoutes);
+app.use("/Bank", accountRoutes);
 
 app.get("/",async(req,res)=>{
     res.send("Bank Management api");
 });
 // app.use("/loans", loanRoutes);
 
-app.listen(3000, () => {
-    console.log(`Server running on http://localhost:3000`);
+app.listen(5000, () => {
+    console.log(`Server running on http://localhost:5000`);
 });
