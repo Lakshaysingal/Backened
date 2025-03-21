@@ -8,7 +8,17 @@ router.get("/getaccount/:accno",Account.getaccountbyid);
 router.get("/getaccount",Account.getaccount);
 router.put("/updateaccount/:accno",Account.updateaccount);
 router.put("/deposit/:accno",Account.deposit);
-routr.put("/withdraw/:accno",Account.withdraw);
+router.put("/withdraw/:accno",Account.withdraw);
+router.get("/transactions/:accno",Account.transaction);
+router.put("transfer",Account.transferfunds);
+router.delete("/deleteaccount/:accno",Account.deleteaccount);
+router.get("/currentbalance/:accno",Account.curentbalance);
+router.get("/searchaccount",Account.search);
+
+
+
+
+
 
 
 

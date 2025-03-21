@@ -164,6 +164,144 @@ catch(error){
 
 
 
+exports.transaction=async(req,res)=>{
+  try{
+    const accno=req.params.accno;
+    const account=await Accountholder.findOne({accno});
+  
+    if (!account) return res.status(404).json({ error: "Account not found" });
+  
+    res.status(200).json(
+      {
+        message: "transactionhitsory", 
+        currentbalance :account.balance,
+        transaction: account.transactions}
+      );
+  
+    }
+  
+    catch(error){
+      res.status(400).json({ error: error.message });
+    }
+};
 
 
 
+exports.transferfunds=async(req,res)=>{
+  try{
+      const {fromacc,toacc,amount}=req.body;
+  
+      if(!fromacc || !toacc || amount <= 0){
+        return res.status(400).send('invalid transfer details');
+      }
+      const sender=await Accountholder.findOne({accno: fromacc});
+      const recevier=await Accountholder.findOne({accno:toacc});
+  
+      if (!sender || !recevier) return res.status(404).send('Account not found');
+      if (sender.status !== 'active' || recevier.status !== 'active') return res.status(400).send('One or both accounts are inactive');
+      if (sender.balance < amount) return res.status(400).send('Insufficient balance');
+  
+  
+      sender.balance-=amount;
+      recevier.balance+=amount;
+  
+      sender.transactions.push({type:'Transfer out',amount,toacc:toacc,date:moment().format("YYYY-MM-DD HH:mm:ss") });  
+      recevier.transactions.push({type:'Transfer in',amount,fromaccount:fromacc,date:new Date()});  
+  
+      await sender.save();
+  
+      await recevier.save();
+  
+  
+  
+      await sendEmail(
+        sender.email,
+        "Funds Transferred",
+        `Dear ${sender.name},\n\nYou transferred ${amount} to account ${toacc}\n\nCurrent Balance: ${sender.balance}\n\nThanks for using our service \n\n Regards \n\n HM FINANCE`
+      );
+  
+      await sendEmail(
+        recevier.email,
+        "Funds Received",
+        `Dear ${recevier.name},\n\nYou received ${amount} from account ${fromacc}.\nNew Balance: ${recevier.balance}\n\nThanks for using our service \n\n Regards \n\n HM FINANCE`
+      );
+  
+      res.status(200).send("Transfer successfull");
+  
+  
+  
+  
+    }
+    catch(error){
+      res.status(500).send(error.message);
+    }
+};
+
+
+
+
+
+exports.curentbalance=async(req,res)=>{
+  try{
+    const accno=req.params.accno;
+  const account=await Accountholder.findOne({accno});
+    
+  if (!account) return res.status(404).json({ error: "Account not found" });
+
+  res.status(200).json(
+    {
+      message:"current balance",
+      balance: account.balance
+    }
+  )
+
+  }
+  catch(error){
+    console.log(error);
+    res.status(500).send(error.message);
+  }
+};
+
+
+exports.deleteaccount=async(req,res)=>{
+  try {
+    const accno = req.params.accno;
+    const deletedAccount = await Accountholder.findOneAndDelete({ accno });
+
+    if (!deletedAccount) {
+      return res.status(404).send("Account not found");
+    }
+
+    res.status(200).send("Account deleted successfully");
+  } catch (error) {
+    res.status(400).send("Error: " + error.message);
+  }
+};
+
+exports.search=async(req,res)=>{
+  try {
+    const { query } = req.query; 
+
+    if (!query) {
+      return res.status(400).send("Search query is required");
+    }
+
+    
+    const accounts = await Accountholder.find({
+      $or: [
+        { accno: query }, 
+        { name: { $regex: query, $options: "i" } }, 
+        { email: { $regex: query, $options: "i" } }, 
+        { mobno: query }
+      ]
+    });
+
+    if (accounts.length === 0) {
+      return res.status(404).send("No matching accounts found");
+    }
+
+    res.status(200).json(accounts);
+  } catch (error) {
+    res.status(400).send("Error: " + error.message);
+  }
+};

@@ -17,7 +17,7 @@ const loandata = new mongoose.Schema({
 
 
 const Loanholder = mongoose.model("Loan", loandata);
-module.exports = Loan;
+module.exports = Loanholder;
 
 
 
