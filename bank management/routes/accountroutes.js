@@ -1,6 +1,9 @@
 const express = require("express");
 const Account = require("../controllers/accountcontroller");
 
+const app = express();
+app.use(express.json());
+
 const router = express.Router();
 
 router.post("/addaccount", Account.createaccount);

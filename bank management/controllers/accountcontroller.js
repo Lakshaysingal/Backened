@@ -4,13 +4,19 @@ const sendEmail=require("../config/mailer");
 
 
 
+
+
 exports.createaccount=async(req,res)=>{
 
     try{
-    const {accno,name,email,mobno,balance}=req.body;
-    const newacc=new Accountholder({accno,name,email,mobno,balance});
+    const {accno,name,email,mobno,balance,accounttype}=req.body;
+    
+    const newacc=new Accountholder({accno,name,email,mobno,balance,accounttype});
+
+    newacc.assignDebitCard();
+
+    await sendEmail(newacc.email,"Welcome to HM Finance",`Welcome to HM Finance\n Your account has been succesfully createdcurrent balance Rs.${newacc.balance}`);
     await newacc.save();
-    await sendEmail(newacc.email,"Welcome to HM Finance",`current balance Rs.${newacc.amount}`);
     res.status(201).send("Account added scuucesfully");
           
             }
@@ -19,6 +25,7 @@ exports.createaccount=async(req,res)=>{
               res.status(400).send("error"+error.message);
             }
 };
+
 
 
 exports.getaccountbyid=async(req,res)=>{
