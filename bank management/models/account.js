@@ -1,13 +1,8 @@
 const mongoose=require("mongoose");
 const moment=require("moment");
 
-
-
-
-
-
-
 const bankdata=new mongoose.Schema({
+    username: { type: String, required: true, unique: true  ,ref: "user"},
     accno:{type:String,required:true,unique: true},
     name:{type:String,required:true},
     email:{type:String,required:true,unique: true},
@@ -35,7 +30,7 @@ const bankdata=new mongoose.Schema({
       },
     
 
-    transactions:[{type:  Object}],
+    
     createdAt: { type: Date, default: Date.now },
     
 
@@ -62,7 +57,19 @@ bankdata.methods.assignDebitCard = function () {
   return this.debitCard;
 };
 
+// bankdata.methods.assignCreditCard = function () {
+  
 
+//   this.creditCard = {
+//     cardNumber: generateCardNumber(),
+//     creditLimit: 100000, 
+//     usedCredit: 0,
+//     expiryDate: generateExpiryDate(),
+//     cvv: Math.floor(100 + Math.random() * 900).toString(),
+//     isActive: true
+//   };
+//   return this.creditCard;
+// };
 
 
 
