@@ -1,22 +1,72 @@
 const express = require("express");
-const Account = require("../controllers/accountcontroller");
+
 
 const app = express();
 app.use(express.json());
 
 const router = express.Router();
+const User = require("../models/user");
+const Accountholder = require("../models/account");
 
-// router.post("/addaccount", Account.createaccount);
-// router.get("/getaccount/:accno",Account.getaccountbyid);
-// router.get("/getaccount",Account.getaccount);
-// router.put("/updateaccount/:accno",Account.updateaccount);
-// router.put("/deposit/:accno",Account.deposit);
-// router.put("/withdraw/:accno",Account.withdraw);
-// router.get("/transactions/:accno",Account.transaction);
-// router.put("transfer",Account.transferfunds);
-// router.delete("/deleteaccount/:accno",Account.deleteaccount);
-// router.get("/currentbalance/:accno",Account.curentbalance);
-// router.get("/searchaccount",Account.search);
+
+
+const generateAccountNumber = () => {
+    return Math.floor(1000000000 + Math.random() * 9000000000).toString(); 
+  };
+
+
+  
+router.post("/addbankaccount", async (req, res) => {
+  try {
+      const { username, balance, accountType } = req.body;
+
+      
+      const user = await User.findOne({ username });
+      if (!user) {
+          return res.status(400).json({ error: "User not found. Please sign up first." });
+      }
+
+     
+      const existingAccount = await Accountholder.findOne({ username });
+      if (existingAccount) {
+          return res.status(400).json({ error: "User already has a bank account." });
+      }
+
+      
+      const accno = generateAccountNumber();
+
+      
+      const newAccount = new Accountholder({
+          username,
+          accno,
+          name: user.name,    
+          email: user.email,  
+          mobno: user.mobno, 
+          balance,
+          accountType,
+      });
+
+      
+      await newAccount.save();
+
+      user.bankAccount = newAccount._id;
+      await user.save();
+
+      
+      res.status(201).json({ message: "Bank account created successfully!", account: newAccount });
+
+  } catch (error) {
+      res.status(500).json({ error: error.message });
+  }
+});
+
+
+
+
+
+
+
+
 
 
 
@@ -26,3 +76,5 @@ const router = express.Router();
 
 
 module.exports = router;
+
+

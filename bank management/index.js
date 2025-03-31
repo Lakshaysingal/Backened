@@ -535,6 +535,44 @@ app.post('/apply-loan',async(req,res)=>{
 
 
 
+// const generateCardNumber = () => {
+//   return "4" + Math.random().toString().slice(2, 16); 
+// };
+
+
+// const generateExpiryDate = () => {
+//   return moment().add(6, "years").format("MM/YY");
+// };
+
+
+// bankdata.methods.assignDebitCard = function () {
+//   this.debitCard = {
+//     cardNumber: generateCardNumber(),
+//     expiryDate: generateExpiryDate(),
+//     cvv: Math.floor(100 + Math.random() * 900).toString(),
+//     isActive: true
+//   };
+//   return this.debitCard;
+// };
+
+
+
+// bankdata.methods.assignCreditCard = function () {
+  
+
+//   this.creditCard = {
+//     cardNumber: generateCardNumber(),
+//     creditLimit: 100000, 
+//     usedCredit: 0,
+//     expiryDate: generateExpiryDate(),
+//     cvv: Math.floor(100 + Math.random() * 900).toString(),
+//     isActive: true
+//   };
+//   return this.creditCard;
+// };
+
+
+
 
 
 
